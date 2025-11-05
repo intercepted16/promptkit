@@ -11,8 +11,8 @@ from typing import Any, Dict, Mapping, Optional, Sequence, Set, Tuple
 
 from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
-from promptkit.errors import PromptConfigError, PromptValidationError
-from promptkit.models.clients import ToolSpecification
+from src.promptkit.errors import PromptConfigError, PromptValidationError
+from src.promptkit.models.clients import ToolSpecification
 
 
 def _ensure_str_key(raw_key: Any, context: str) -> str:
@@ -57,13 +57,19 @@ class ToolConfig(BaseModel):
     def _validate_text_fields(cls, value: Any, info: ValidationInfo) -> str:
         field_name = info.field_name or "tool.field"
         cleaned = _clean_string(value, f"tool.{field_name}")
+        tool_type = info.data.get("type")
         if (
-            field_name == "url"
-            and cleaned
-            and not cleaned.startswith(("http://", "https://", "uvx "))
+            tool_type in ("sse", "http")
+            and field_name == "url"
+            and not cleaned.startswith(
+                (
+                    "http://",
+                    "https://",
+                )
+            )
         ):
             raise PromptConfigError(
-                "tool.url must be an HTTP(S) address or managed command."
+                "tool.url must be an HTTP(S) address if using 'sse' or 'http' tool types."
             )
         return cleaned
 
