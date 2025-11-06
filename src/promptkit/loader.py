@@ -92,7 +92,7 @@ class PromptLoader:
             raise PromptConfigError(
                 f"Failed to read TOML configuration: {exc}"
             ) from exc
-        if not isinstance(data, dict):
+        if not isinstance(data, dict):  # pyright: ignore[reportUnnecessaryIsInstance]
             raise PromptConfigError("TOML configuration must decode to a mapping.")
         return data
 

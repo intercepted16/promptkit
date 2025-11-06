@@ -1,0 +1,11 @@
+[models]
+welcome = "demo/unit-test"
+
+[providers]
+welcome = "demo"
+
+[temperatures]
+welcome = 0.1
+
+[welcome]
+template = "Hello {name}, welcome to {product}!"

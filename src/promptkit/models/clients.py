@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Iterator, List, Optional, Protocol, TypedDict
+from typing import Any, Callable, Dict, Iterator, List, Optional, Protocol, TypedDict
 
 
 class ToolSpecification(TypedDict, total=False):
@@ -25,8 +25,6 @@ class LLMResponse(TypedDict):
 class LLMClient(Protocol):
     """Protocol implemented by LLM provider adapters."""
 
-    model: str
-    temperature: float
     supports_tools: bool
 
     def generate(
@@ -40,3 +38,7 @@ class LLMClient(Protocol):
     ) -> Iterator[str]:
         """Yield tokens for the given prompt as they are produced."""
         ...
+
+
+ClientFactory = Callable[[str, float], LLMClient]
+"""Factory function that creates an LLM client given model name and temperature."""

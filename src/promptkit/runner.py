@@ -7,10 +7,15 @@ from dataclasses import dataclass
 from hashlib import sha256
 from typing import Dict, Iterator, List, Mapping, MutableMapping, Optional, Sequence
 
-from src.promptkit.models.clients import LLMClient, LLMResponse, ToolSpecification
 from src.promptkit.errors import PromptProviderError, PromptValidationError
-from src.promptkit.models.hooks import HookContext, HookManager, PromptHook
 from src.promptkit.loader import PromptDefinition, PromptLoader
+from src.promptkit.models.clients import (
+    ClientFactory,
+    LLMClient,
+    LLMResponse,
+    ToolSpecification,
+)
+from src.promptkit.models.hooks import HookContext, HookManager, PromptHook
 
 
 @dataclass(frozen=True)
@@ -75,14 +80,14 @@ class PromptRunner:
         self.loader = loader
         self.cache = cache or PromptCache()
         self.hooks = HookManager(hooks)
-        self._clients: MutableMapping[str, LLMClient] = {}
+        self._factories: MutableMapping[str, ClientFactory] = {}
 
-    def register_client(self, provider: str, client: LLMClient) -> None:
-        """Associate an LLM client with a provider key."""
+    def register_client(self, provider: str, factory: ClientFactory) -> None:
+        """Register a client factory for a provider key."""
         provider_key = provider.strip().lower()
         if not provider_key:
             raise PromptProviderError("Provider key must be a non-empty string.")
-        self._clients[provider_key] = client
+        self._factories[provider_key] = factory
 
     def run(
         self,
@@ -91,7 +96,7 @@ class PromptRunner:
         *,
         tools: Optional[Sequence[ToolSpecification]] = None,
         use_cache: bool = True,
-    ) -> str:
+    ) -> LLMResponse:
         """Execute a prompt using the registered provider client."""
         plan = self._build_execution_plan(
             prompt_name, variables or {}, tools, streaming=False
@@ -102,7 +107,7 @@ class PromptRunner:
         if use_cache:
             cached = self.cache.get(plan.cache_key)
             if cached is not None:
-                return cached
+                return {"reasoning": "", "output": cached}
 
         try:
             response = plan.client.generate(
@@ -112,13 +117,12 @@ class PromptRunner:
         except Exception as exc:
             self.hooks.on_error(plan.context, exc)
             raise
-        output = self._extract_output(response)
 
         if use_cache:
-            self.cache.set(plan.cache_key, output)
+            self.cache.set(plan.cache_key, response["output"])
 
         self.hooks.after_run(plan.context, response)
-        return output
+        return response
 
     def run_stream(
         self,
@@ -147,6 +151,7 @@ class PromptRunner:
             raise
         else:
             response: LLMResponse = {"reasoning": "", "output": "".join(collected)}
+
             self.hooks.after_run(plan.context, response)
 
     # ------------------------------------------------------------------
@@ -168,16 +173,16 @@ class PromptRunner:
             )
 
         rendered_prompt, normalized_variables = definition.render_with(variables)
-        client = self._resolve_client(definition.model.provider)
+        client = self._resolve_client(definition)
         resolved_tools = self._resolve_tools(definition, client, tools)
 
         cache_key = ""
         if not streaming:
             cache_key = self.cache.build_key(
                 prompt=prompt_name,
-                model_name=client.model,
+                model_name=definition.model.name,
                 provider=definition.model.provider,
-                temperature=client.temperature,
+                temperature=definition.model.temperature,
                 variables=normalized_variables,
             )
 
@@ -199,13 +204,15 @@ class PromptRunner:
             tools=resolved_tools,
         )
 
-    def _resolve_client(self, provider: str) -> LLMClient:
+    def _resolve_client(self, definition: PromptDefinition) -> LLMClient:
+        provider = definition.model.provider
         key = provider.strip().lower()
-        if key not in self._clients:
+        if key not in self._factories:
             raise PromptProviderError(
-                f"No LLM client registered for provider '{provider}'."
+                f"No LLM client factory registered for provider '{provider}'."
             )
-        return self._clients[key]
+        factory = self._factories[key]
+        return factory(definition.model.name, definition.model.temperature)
 
     @staticmethod
     def _resolve_tools(
@@ -215,14 +222,16 @@ class PromptRunner:
     ) -> Optional[Sequence[ToolSpecification]]:
         if override_tools is not None:
             if override_tools and not client.supports_tools:
+                model_name = definition.model.name
                 raise PromptProviderError(
-                    f"Client '{client.model}' does not support tool execution."
+                    f"Client for model '{model_name}' does not support tool execution."
                 )
             return override_tools
         configured = definition.build_tools()
         if configured and not client.supports_tools:
+            model_name = definition.model.name
             raise PromptProviderError(
-                f"Client '{client.model}' does not support configured tools."
+                f"Client for model '{model_name}' does not support configured tools."
             )
         return configured
 

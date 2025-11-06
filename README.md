@@ -37,9 +37,16 @@ loader = PromptLoader("prompts.toml")
 loader.load()
 
 runner = PromptRunner(loader)
-runner.register_client("demo", EchoClient(model="demo/unit-test"))
 
-print(runner.run("welcome", {"name": "Ada", "product": "PromptKit"}))
+# Register a factory that creates client instances with model/temperature from the prompt config
+def echo_factory(model: str, temperature: float) -> LLMClient:
+    return EchoClient(model=model, temperature=temperature)
+
+runner.register_client("demo", echo_factory)
+
+result = runner.run("welcome", {"name": "Ada", "product": "PromptKit"})
+print(result["output"])  # Hello Ada, welcome to PromptKit!
+print(result["reasoning"])  # Model reasoning if provided
 ```
 
 ### Extension points
