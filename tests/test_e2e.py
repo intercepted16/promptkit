@@ -1,6 +1,8 @@
 """Integration test for PromptKit flow: run, stream, hooks, and cache."""
 
-from typing import Iterator
+import json
+from hashlib import sha256
+from typing import Iterator, Mapping
 
 from src.promptkit import HookContext, PromptHook, PromptLoader, PromptRunner
 from src.promptkit.models.clients import LLMClient, LLMResponse, ToolSpecification
@@ -12,18 +14,29 @@ CALL_COUNTER = {"generate_calls": 0}
 class EchoClient(LLMClient):
     """Mock client that echoes back the prompt and exposes model used."""
 
-    def __init__(self, model: str, temperature: float = 0.0) -> None:
-        """Initialize the echo client with model and temperature."""
-        self.model = model
-        self.temperature = temperature
+    def __init__(self) -> None:
+        """Initialize the echo client (no model/temperature at construction)."""
         self.supports_tools = False
 
-    def generate(self, prompt: str, tools: list[ToolSpecification] | None = None) -> LLMResponse:
+    def generate(
+        self,
+        prompt: str,
+        tools: list[ToolSpecification] | None = None,
+        model: str | None = None,
+        temperature: float | None = None,
+    ) -> LLMResponse:
         """Generate a response by echoing the prompt and incrementing a counter."""
         CALL_COUNTER["generate_calls"] += 1
-        return {"reasoning": f"echo for model {self.model}", "output": prompt}
+        effective_model = model or "(unknown)"
+        return {"reasoning": f"echo for model {effective_model}", "output": prompt}
 
-    def stream_generate(self, prompt: str, tools: list[ToolSpecification] | None = None):
+    def stream_generate(
+        self,
+        prompt: str,
+        tools: list[ToolSpecification] | None = None,
+        model: str | None = None,
+        temperature: float | None = None,
+    ):
         """Stream generate a response by echoing the prompt in one chunk."""
         yield prompt
 
@@ -33,18 +46,26 @@ class FailingClient(LLMClient):
 
     supports_tools = False
 
-    def __init__(self, model: str, temperature: float = 0.0) -> None:
-        """Initialize the failing client with model and temperature."""
-        self.model = model
-        self.temperature = temperature
+    def __init__(self) -> None:
+        """Initialize the failing client (no model/temperature at construction)."""
 
     def generate(
-        self, prompt: str, tools: list[ToolSpecification] | None = None
+        self,
+        prompt: str,
+        tools: list[ToolSpecification] | None = None,
+        model: str | None = None,
+        temperature: float | None = None,
     ) -> LLMResponse:  # pragma: no cover - exercised by hook path
         """Always raise a runtime error to trigger error hooks."""
         raise RuntimeError("boom")
 
-    def stream_generate(self, prompt: str, tools: list[ToolSpecification] | None = None) -> Iterator[str]:
+    def stream_generate(
+        self,
+        prompt: str,
+        tools: list[ToolSpecification] | None = None,
+        model: str | None = None,
+        temperature: float | None = None,
+    ) -> Iterator[str]:
         """Yield nothing; not used in error tests."""
         return iter(())
 
@@ -80,13 +101,41 @@ def test_end_to_end():
     loader.load()
 
     hook = RecordingHook()
-    runner = PromptRunner(loader, hooks=[hook])
+
+    # Simple in-test cache implementation to opt-in to caching behavior.
+    class MemoryCache:
+        def __init__(self) -> None:
+            self._store: dict[str, str] = {}
+
+        def build_key(
+            self,
+            prompt: str,
+            model_name: str,
+            provider: str,
+            temperature: float,
+            variables: Mapping[str, str],
+        ) -> str:
+            payload = {
+                "prompt": prompt,
+                "model": model_name,
+                "provider": provider,
+                "temperature": round(temperature, 3),
+                "variables": dict(sorted(variables.items())),
+            }
+            encoded = json.dumps(payload, sort_keys=True, ensure_ascii=True)
+            return sha256(encoded.encode("utf-8")).hexdigest()
+
+        def get(self, key: str) -> str | None:
+            return self._store.get(key)
+
+        def set(self, key: str, value: str) -> None:
+            self._store[key] = value
+
+    runner = PromptRunner(loader, hooks=[hook], cache=MemoryCache())
 
     # Register a factory that creates EchoClient instances
-    def echo_factory(model: str, temperature: float) -> LLMClient:
-        return EchoClient(model=model, temperature=temperature)
-
-    runner.register_client("demo", echo_factory)
+    # Register a client instance directly (model/temperature provided at call-time)
+    runner.register_client("demo", EchoClient())
 
     # Normal run returns reasoning and output
     response = runner.run("welcome", {"name": "Ada", "product": "PromptKit"})
@@ -116,10 +165,7 @@ def test_end_to_end():
     # Error path triggers on_error and does not add an after_run
     failing = PromptRunner(loader, hooks=[hook])
 
-    def failing_factory(model: str, temperature: float) -> LLMClient:
-        return FailingClient(model=model, temperature=temperature)
-
-    failing.register_client("demo", failing_factory)
+    failing.register_client("demo", FailingClient())
     error_count_before = len(hook.error_calls)
     try:
         _ = failing.run("welcome", {"name": "Ada", "product": "PromptKit"})

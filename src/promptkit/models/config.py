@@ -26,9 +26,7 @@ def _clean_string(raw: Any, field_name: str) -> str:
         return ""
     value = str(raw).strip()
     if "\x00" in value:
-        raise PromptConfigError(
-            f"{field_name} contains a null byte, which is not allowed."
-        )
+        raise PromptConfigError(f"{field_name} contains a null byte, which is not allowed.")
     return value
 
 
@@ -47,9 +45,7 @@ class ToolConfig(BaseModel):
         allowed = {"http", "stdio", "sse"}
         cleaned = _clean_string(value, "tool.type").lower()
         if cleaned not in allowed:
-            raise PromptConfigError(
-                f"Unsupported tool type '{value}'. Allowed values: {', '.join(sorted(allowed))}."
-            )
+            raise PromptConfigError(f"Unsupported tool type '{value}'. Allowed values: {', '.join(sorted(allowed))}.")
         return cleaned
 
     @field_validator("url", "name", "description", mode="before")
@@ -68,25 +64,20 @@ class ToolConfig(BaseModel):
                 )
             )
         ):
-            raise PromptConfigError(
-                "tool.url must be an HTTP(S) address if using 'sse' or 'http' tool types."
-            )
+            raise PromptConfigError("tool.url must be an HTTP(S) address if using 'sse' or 'http' tool types.")
         return cleaned
 
     @field_validator("parameters", mode="before")
     @classmethod
-    def _coerce_parameters(cls, value: Any) -> Dict[str, Any]:
+    def _coerce_parameters(cls, value: Optional[Dict[str, Any] | str]) -> Dict[str, Any]:
         if value is None:
             return {}
-        if isinstance(value, dict):
-            if not all(isinstance(key, str) for key in value.keys()):
-                raise PromptConfigError("tool.parameters keys must be strings.")
-            return {key: value[key] for key in value.keys()}
         if isinstance(value, str):
             return cls._parse_parameters_string(value)
-        raise PromptConfigError(
-            "tool.parameters must be a mapping or JSON-encoded object."
-        )
+        result: Dict[str, Any] = {}
+        for key_val, item_val in value.items():
+            result[key_val] = item_val
+        return result
 
     def as_tool_spec(self) -> ToolSpecification:
         """Return the configuration as a ToolSpecification understood by PromptRunner."""
@@ -104,17 +95,15 @@ class ToolConfig(BaseModel):
         if not cleaned:
             return {}
         try:
-            decoded = json.loads(cleaned)
+            decoded: Dict[str, Any] = json.loads(cleaned)
         except json.JSONDecodeError as exc:
-            raise PromptConfigError(
-                f"tool.parameters must contain valid JSON: {exc}"
-            ) from exc
-        if not isinstance(decoded, dict):
-            raise PromptConfigError("tool.parameters JSON must decode to an object.")
-        return {
-            _ensure_str_key(raw_key, "tool.parameters"): item
-            for raw_key, item in decoded.items()
-        }
+            raise PromptConfigError(f"tool.parameters must contain valid JSON: {exc}") from exc
+
+        result: Dict[str, Any] = {}
+        for key in decoded.keys():
+            str_key = _ensure_str_key(key, "tool.parameters")
+            result[str_key] = decoded[key]
+        return result
 
 
 class ModelConfig(BaseModel):
@@ -150,9 +139,7 @@ class ModelConfig(BaseModel):
         except (TypeError, ValueError) as exc:
             raise PromptConfigError("temperature must be numeric.") from exc
         if temp < 0.0 or temp > 2.0:
-            raise PromptConfigError(
-                "temperature must be between 0.0 and 2.0 inclusive."
-            )
+            raise PromptConfigError("temperature must be between 0.0 and 2.0 inclusive.")
         return temp
 
     @field_validator("template", mode="before")
@@ -172,9 +159,7 @@ class ModelConfig(BaseModel):
         if cleaned:
             normalized = Path(cleaned).as_posix()
             if ".." in Path(normalized).parts:
-                raise PromptConfigError(
-                    "schema_path must not traverse parent directories."
-                )
+                raise PromptConfigError("schema_path must not traverse parent directories.")
             return normalized
         return None
 
@@ -245,9 +230,7 @@ class PromptDefinition:
         missing = [key for key in self.required_variables if key not in variables]
         if missing:
             joined = ", ".join(missing)
-            raise PromptValidationError(
-                f"Prompt '{self.name}' requires variables: {joined}."
-            )
+            raise PromptValidationError(f"Prompt '{self.name}' requires variables: {joined}.")
 
         safe_variables: Dict[str, str] = {}
         for key in self.required_variables:
@@ -263,9 +246,7 @@ class PromptDefinition:
         if isinstance(value, (str, int, float, bool)):
             sanitized_value = str(value)
         else:
-            raise PromptValidationError(
-                f"Variable '{key}' must be a string, int, float, or bool."
-            )
+            raise PromptValidationError(f"Variable '{key}' must be a string, int, float, or bool.")
         if "\x00" in sanitized_value:
             raise PromptValidationError(f"Variable '{key}' contains a null byte.")
         return sanitized_value

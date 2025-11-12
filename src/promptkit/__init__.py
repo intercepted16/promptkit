@@ -8,23 +8,22 @@ from src.promptkit.errors import (
 )
 from src.promptkit.loader import PromptLoader
 from src.promptkit.models.clients import (
-    ClientFactory,
     LLMClient,
     LLMResponse,
     ToolSpecification,
 )
 from src.promptkit.models.config import ModelConfig, PromptDefinition, ToolConfig
 from src.promptkit.models.hooks import HookContext, HookManager, PromptHook
-from src.promptkit.runner import PromptCache, PromptRunner
+from src.promptkit.runner import PromptCacheProtocol, PromptRunner
 
 __all__ = [
-    "ClientFactory",
+    # ClientFactory removed; clients are registered as instances
     "HookContext",
     "HookManager",
     "LLMClient",
     "LLMResponse",
     "ModelConfig",
-    "PromptCache",
+    "PromptCacheProtocol",
     "PromptConfigError",
     "PromptDefinition",
     "PromptKitError",

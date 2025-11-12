@@ -1,0 +1,11 @@
+[models]
+demo = "openai/gpt-4.1"
+
+[providers]
+demo = "litellm"
+
+[temperatures]
+demo = 0.1
+
+[demo]
+template = "Hello {name}, welcome to {product}!"
