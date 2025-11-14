@@ -42,8 +42,9 @@ template = "Hello {name}, welcome to {product}!"
 Here's a minimal example using a custom echo client:
 
 ```python
-from src.promptkit import PromptLoader, PromptRunner
-from src.promptkit.models.clients import LLMResponse, ToolSpecification
+from src.py_promptkit import PromptLoader, PromptRunner
+from src.py_promptkit.models.clients import LLMResponse, ToolSpecification
+
 
 class EchoClient:
     """Simple echo client for testing.
@@ -57,22 +58,23 @@ class EchoClient:
     supports_tools = False
 
     def generate(
-        self,
-        prompt: str,
-        tools: list[ToolSpecification] | None = None,
-        model: str | None = None,
-        temperature: float | None = None,
+            self,
+            prompt: str,
+            tools: list[ToolSpecification] | None = None,
+            model: str | None = None,
+            temperature: float | None = None,
     ) -> LLMResponse:
         return {"reasoning": "echo", "output": prompt}
 
     def stream_generate(
-        self,
-        prompt: str,
-        tools: list[ToolSpecification] | None = None,
-        model: str | None = None,
-        temperature: float | None = None,
+            self,
+            prompt: str,
+            tools: list[ToolSpecification] | None = None,
+            model: str | None = None,
+            temperature: float | None = None,
     ):
         yield prompt
+
 
 # Load configuration
 loader = PromptLoader("prompts.toml")
@@ -124,8 +126,8 @@ pip install litellm
 #### Basic LiteLLM Usage
 
 ```python
-from src.promptkit import PromptLoader, PromptRunner
-from src.promptkit.litellm.core import LiteLLMClient
+from src.py_promptkit import PromptLoader, PromptRunner
+from src.py_promptkit.litellm.core import LiteLLMClient
 
 # Load prompts
 loader = PromptLoader("prompts.toml")
@@ -141,7 +143,7 @@ secrets = {
 # Use context manager for automatic cleanup
 with PromptRunner(loader) as runner:
     runner.register_client("openai", LiteLLMClient(secrets=secrets))
-    
+
     result = runner.run("welcome", {"name": "Ada", "product": "PromptKit"})
     print(result["output"])
 ```
@@ -247,15 +249,15 @@ parameters = '{"type": "object", "properties": {"expression": {"type": "string",
 When you run this prompt, the tool specification is automatically passed to the client:
 
 ```python
-from src.promptkit import PromptLoader, PromptRunner
-from src.promptkit.litellm.core import LiteLLMClient
+from src.py_promptkit import PromptLoader, PromptRunner
+from src.py_promptkit.litellm.core import LiteLLMClient
 
 loader = PromptLoader("prompts.toml")
 loader.load()
 
 with PromptRunner(loader) as runner:
     runner.register_client("openai", LiteLLMClient(secrets={"OPENAI_API_KEY": "sk-..."}))
-    
+
     # Tools from TOML are automatically used
     result = runner.run("assistant", {"request": "What is 25 * 4?"})
     print(result["output"])
@@ -278,7 +280,7 @@ with PromptRunner(loader) as runner:
 For MCP tools, you need to initialize MCP clients when creating the `LiteLLMClient`:
 
 ```python
-from src.promptkit.litellm.core import LiteLLMClient
+from src.py_promptkit.litellm.core import LiteLLMClient
 
 # Initialize MCP client connections
 mcp_tools = [
@@ -291,7 +293,7 @@ mcp_tools = [
 
 with PromptRunner(loader) as runner:
     runner.register_client("openai", LiteLLMClient(mcp_tools=mcp_tools, secrets=secrets))
-    
+
     # Use prompt that references the MCP tool
     result = runner.run("file_assistant", {"filename": "data.json"})
 ```
@@ -334,8 +336,9 @@ description = "Search query"
 Implement the `LLMClient` protocol to integrate any LLM provider:
 
 ```python
-from src.promptkit.models.clients import LLMClient, LLMResponse, ToolSpecification
+from src.py_promptkit.models.clients import LLMClient, LLMResponse, ToolSpecification
 from typing import Iterator
+
 
 class MyCustomClient:
     """Example custom client implementing the `LLMClient` protocol.
@@ -347,26 +350,27 @@ class MyCustomClient:
     supports_tools = False  # Set to True if your client supports tool-calling
 
     def generate(
-        self,
-        prompt: str,
-        tools: list[ToolSpecification] | None = None,
-        model: str | None = None,
-        temperature: float | None = None,
+            self,
+            prompt: str,
+            tools: list[ToolSpecification] | None = None,
+            model: str | None = None,
+            temperature: float | None = None,
     ) -> LLMResponse:
         # Your custom LLM API logic here
         response_text = call_my_llm_api(prompt, model, temperature)
         return {"reasoning": "", "output": response_text}
 
     def stream_generate(
-        self,
-        prompt: str,
-        tools: list[ToolSpecification] | None = None,
-        model: str | None = None,
-        temperature: float | None = None,
+            self,
+            prompt: str,
+            tools: list[ToolSpecification] | None = None,
+            model: str | None = None,
+            temperature: float | None = None,
     ) -> Iterator[str]:
         # Stream tokens from your LLM
         for token in stream_my_llm_api(prompt, model, temperature):
             yield token
+
 
 # Register your custom client instance
 runner.register_client("my_provider", MyCustomClient())
@@ -377,21 +381,23 @@ runner.register_client("my_provider", MyCustomClient())
 Implement `PromptHook` to observe or modify prompt execution:
 
 ```python
-from src.promptkit.models.hooks import PromptHook, HookContext
-from src.promptkit.models.clients import LLMResponse
+from src.py_promptkit.models.hooks import PromptHook, HookContext
+from src.py_promptkit.models.clients import LLMResponse
+
 
 class LoggingHook(PromptHook):
     def before_run(self, context: HookContext) -> None:
         print(f"Running prompt: {context.prompt_name}")
         print(f"Model: {context.model.name}")
         print(f"Variables: {context.variables}")
-    
+
     def after_run(self, context: HookContext, response: LLMResponse) -> None:
         print(f"Completed: {context.prompt_name}")
         print(f"Output length: {len(response['output'])} chars")
-    
+
     def on_error(self, context: HookContext, error: Exception) -> None:
         print(f"Error in {context.prompt_name}: {error}")
+
 
 # Register hooks when creating the runner
 runner = PromptRunner(loader, hooks=[LoggingHook()])
@@ -549,7 +555,7 @@ template = "{text}"
 Register multiple clients:
 
 ```python
-from src.promptkit.litellm.core import LiteLLMClient
+from src.py_promptkit.litellm.core import LiteLLMClient
 
 openai_secrets = {"OPENAI_API_KEY": "sk-..."}
 anthropic_secrets = {"ANTHROPIC_API_KEY": "sk-ant-..."}
@@ -557,7 +563,7 @@ anthropic_secrets = {"ANTHROPIC_API_KEY": "sk-ant-..."}
 with PromptRunner(loader) as runner:
     runner.register_client("openai", LiteLLMClient(secrets=openai_secrets))
     runner.register_client("anthropic", LiteLLMClient(secrets=anthropic_secrets))
-    
+
     # Use different models for different tasks
     chat_result = runner.run("chat", {"topic": "AI safety"})
     analysis_result = runner.run("analysis", {"code": "def factorial(n): ..."})
@@ -623,13 +629,13 @@ class HookContext:
 PromptKit defines specific exception types for different failure modes:
 
 ```python
-from src.promptkit.errors import (
-    PromptKitError,          # Base exception
-    PromptConfigError,       # Configuration/TOML parsing errors
-    PromptValidationError,   # Variable validation errors
-    PromptProviderError,     # Provider/client registration errors
-    ModelRequestError,       # LLM API request failures (LiteLLM)
-    MCPError                 # MCP tool execution errors
+from src.py_promptkit.errors import (
+    PromptKitError,  # Base exception
+    PromptConfigError,  # Configuration/TOML parsing errors
+    PromptValidationError,  # Variable validation errors
+    PromptProviderError,  # Provider/client registration errors
+    ModelRequestError,  # LLM API request failures (LiteLLM)
+    MCPError  # MCP tool execution errors
 )
 
 try:
@@ -646,14 +652,14 @@ except ModelRequestError as e:
 
 ```bash
 # Basic installation
-pip install promptkit
+pip install py_promptkit
 
 # With LiteLLM support
 pip install litellm
 
 # Development installation
 git clone https://github.com/yourusername/promptkit.git
-cd promptkit
+cd py_promptkit
 pip install -e ".[dev]"
 ```
 

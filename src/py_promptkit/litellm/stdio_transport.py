@@ -8,8 +8,8 @@ import subprocess
 import time
 from typing import Any, Dict, Optional, TextIO, cast
 
-from src.promptkit.errors import MCPError
-from src.promptkit.utils._logger import logger
+from src.py_promptkit.errors import MCPError
+from src.py_promptkit.utils._logger import logger
 
 
 class StdIOTransport:

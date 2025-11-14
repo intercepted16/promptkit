@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Union
 
-from src.promptkit.models.transport import MCPTransport
-from src.promptkit.utils._logger import logger
+from src.py_promptkit.models.transport import MCPTransport
+from src.py_promptkit.utils._logger import logger
 
 
 class MCPTools:

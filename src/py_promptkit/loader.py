@@ -12,8 +12,8 @@ try:
 except ModuleNotFoundError:
     import tomli as _toml  # type: ignore
 
-from src.promptkit.errors import PromptConfigError
-from src.promptkit.models.config import ModelConfig, PromptDefinition, ToolConfig
+from src.py_promptkit.errors import PromptConfigError
+from src.py_promptkit.models.config import ModelConfig, PromptDefinition, ToolConfig
 
 
 class PromptLoader:

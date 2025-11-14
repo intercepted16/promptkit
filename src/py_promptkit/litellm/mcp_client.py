@@ -2,7 +2,7 @@
 
 This module provides the MCPClient orchestration and re-exports transport
 and tools helpers from the dedicated modules so other code can still import
-from `src.promptkit.litellm.mcp_client`.
+from `src.py_promptkit.litellm.mcp_client`.
 """
 
 from __future__ import annotations
@@ -12,12 +12,12 @@ import json
 import traceback
 from typing import Any, Dict
 
-from src.promptkit.errors import MCPError
-from src.promptkit.litellm.sse_transport import SSETransport
-from src.promptkit.litellm.stdio_transport import StdIOTransport
-from src.promptkit.litellm.tools import MCPTools
-from src.promptkit.models.transport import MCPTransport
-from src.promptkit.utils._logger import logger
+from src.py_promptkit.errors import MCPError
+from src.py_promptkit.litellm.sse_transport import SSETransport
+from src.py_promptkit.litellm.stdio_transport import StdIOTransport
+from src.py_promptkit.litellm.tools import MCPTools
+from src.py_promptkit.models.transport import MCPTransport
+from src.py_promptkit.utils._logger import logger
 
 
 class MCPClient:

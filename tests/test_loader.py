@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from src.promptkit.errors import PromptConfigError
-from src.promptkit.loader import PromptLoader
+from src.py_promptkit.errors import PromptConfigError
+from src.py_promptkit.loader import PromptLoader
 
 
 @pytest.fixture

@@ -11,8 +11,8 @@ from typing import Any, Dict, Mapping, Optional, Sequence, Set, Tuple
 
 from pydantic import BaseModel, Field, ValidationInfo, field_validator  # type: ignore lib constraint
 
-from src.promptkit.errors import PromptConfigError, PromptValidationError
-from src.promptkit.models.clients import ToolSpecification
+from src.py_promptkit.errors import PromptConfigError, PromptValidationError
+from src.py_promptkit.models.clients import ToolSpecification
 
 
 def _ensure_str_key(raw_key: Any, context: str) -> str:

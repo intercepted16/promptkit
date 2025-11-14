@@ -7,7 +7,7 @@ from typing import Any, Dict
 
 import requests
 
-from src.promptkit.errors import MCPError
+from src.py_promptkit.errors import MCPError
 
 
 class SSETransport:

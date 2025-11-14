@@ -11,11 +11,11 @@ import requests
 from litellm.utils import validate_environment as litellm_validate_environment  # type: ignore
 from pydantic import ValidationError
 
-from src.promptkit.errors import MCPError, ModelRequestError
-from src.promptkit.litellm.mcp_client import MCPClient
-from src.promptkit.litellm.sse_transport import SSETransport
-from src.promptkit.litellm.stdio_transport import StdIOTransport
-from src.promptkit.models.llms import (
+from src.py_promptkit.errors import MCPError, ModelRequestError
+from src.py_promptkit.litellm.mcp_client import MCPClient
+from src.py_promptkit.litellm.sse_transport import SSETransport
+from src.py_promptkit.litellm.stdio_transport import StdIOTransport
+from src.py_promptkit.models.llms import (
     CompletionResponse,
     LLMModel,
     LLMOutput,
@@ -26,7 +26,7 @@ from src.promptkit.models.llms import (
     ToolCall,
     ToolSpec,
 )
-from src.promptkit.utils._logger import logger
+from src.py_promptkit.utils._logger import logger
 
 # Type aliases for clarity
 ChatMessage = dict[str, Any]

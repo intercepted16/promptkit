@@ -5,8 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable, Mapping, MutableSequence, Sequence
 
-from src.promptkit.models.clients import LLMResponse, ToolSpecification
-from src.promptkit.models.config import ModelConfig
+from src.py_promptkit.models.clients import LLMResponse, ToolSpecification
+from src.py_promptkit.models.config import ModelConfig
 
 
 @dataclass(frozen=True)

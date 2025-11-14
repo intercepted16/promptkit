@@ -6,14 +6,14 @@ from dataclasses import dataclass
 from types import TracebackType
 from typing import Dict, Iterator, List, Mapping, MutableMapping, Optional, Protocol, Sequence, runtime_checkable
 
-from src.promptkit.errors import PromptProviderError, PromptValidationError
-from src.promptkit.loader import PromptDefinition, PromptLoader
-from src.promptkit.models.clients import (
+from src.py_promptkit.errors import PromptProviderError, PromptValidationError
+from src.py_promptkit.loader import PromptDefinition, PromptLoader
+from src.py_promptkit.models.clients import (
     LLMClient,
     LLMResponse,
     ToolSpecification,
 )
-from src.promptkit.models.hooks import HookContext, HookManager, PromptHook
+from src.py_promptkit.models.hooks import HookContext, HookManager, PromptHook
 
 
 @dataclass(frozen=True)

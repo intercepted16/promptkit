@@ -6,9 +6,9 @@ from pathlib import Path
 
 import pytest
 
-from src.promptkit.errors import PromptProviderError, PromptValidationError
-from src.promptkit.loader import PromptLoader
-from src.promptkit.runner import PromptRunner
+from src.py_promptkit.errors import PromptProviderError, PromptValidationError
+from src.py_promptkit.loader import PromptLoader
+from src.py_promptkit.runner import PromptRunner
 from tests.utils import EchoClient as MockLLMClient
 
 

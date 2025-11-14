@@ -4,8 +4,8 @@ import json
 from hashlib import sha256
 from typing import Iterator, Mapping
 
-from src.promptkit import HookContext, PromptHook, PromptLoader, PromptRunner
-from src.promptkit.models.clients import LLMClient, LLMResponse, ToolSpecification
+from src.py_promptkit import HookContext, PromptHook, PromptLoader, PromptRunner
+from src.py_promptkit.models.clients import LLMClient, LLMResponse, ToolSpecification
 
 # Module-level counters to observe behavior across client instances
 CALL_COUNTER = {"generate_calls": 0}

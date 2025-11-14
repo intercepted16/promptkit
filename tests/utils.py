@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 from typing import Iterator
-from src.promptkit.models.clients import LLMClient, LLMResponse, ToolSpecification
-from src.promptkit.models.hooks import HookContext, PromptHook
+from src.py_promptkit.models.clients import LLMClient, LLMResponse, ToolSpecification
+from src.py_promptkit.models.hooks import HookContext, PromptHook
 from pathlib import Path
 from dotenv import find_dotenv, dotenv_values
 
