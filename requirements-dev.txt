@@ -1,0 +1,6 @@
+ruff==0.14.3
+pytest==8.4.2
+pylyzer==0.0.82
+iniconfig==2.3.0
+pyright==1.1.407
+

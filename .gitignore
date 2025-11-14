@@ -3,3 +3,6 @@ __pycache__/
 *$py.class
 .venv/
 .vscode/
+node_modules/
+**/*.egg-info/
+
